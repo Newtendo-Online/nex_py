@@ -1,24 +1,14 @@
-# nex (Python)
+<h1 align="center">nex_py</h1>
 
-Port Python de [PretendoNetwork/nex-go](https://github.com/PretendoNetwork/nex-go) (branche `splatoon`).
-Aucune dépendance : bibliothèque standard uniquement (Python ≥ 3.10).
+<p align="center">
+  <b>Implementation of Nintendo's NEX/PRUDP online protocol, written in Python.</b>
+</p>
 
-## Correspondance Go → Python
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54" alt="Python">
+</p>
 
-| Go | Python |
-|---|---|
-| `Bytes()` | `to_bytes()` |
-| getters/setters (`SetPID`, `PID()`) | attributs (`client.pid`) |
-| `(valeur, error)` | exception `NexError` |
-| `NewServer()`, `NewClient(...)` | `Server()`, `Client(...)` |
-| `nex.Errors.Core.Unknown` | `nex.Errors.Core.Unknown` |
-| `server.On("Data", func(p *PacketV1){})` | `server.on("Data", lambda p: ...)` |
-| goroutines / `time.AfterFunc` | `threading.Thread` / `threading.Timer` |
-| `crypto/rc4` | `nex.RC4` (réimplémenté, stdlib n'en a pas) |
-
-Fichiers : un module par fichier Go (`md5.go` + `sum.go` + `init.go` → `utils.py`).
-
-## Exemple
+## Example
 
 ```python
 import nex

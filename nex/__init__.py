@@ -1,8 +1,3 @@
-"""nex — port Python de PretendoNetwork/nex-go (branche `splatoon`).
-
-Convention de nommage : méthodes Go `Bytes()` -> `to_bytes()`, getters/setters
--> attributs publics, `(valeur, error)` -> exceptions `NexError`.
-"""
 from .client import Client
 from .compression import DummyCompression, ZLibCompression
 from .counter import Counter

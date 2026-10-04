@@ -1,4 +1,3 @@
-"""Flux de sortie NEX (stream_out.go). Remplace `crunch.Buffer` par un bytearray."""
 from __future__ import annotations
 
 import struct
@@ -14,18 +13,15 @@ class StreamOut:
         self.server = server
         self._buf = bytearray()
 
-    # -- bas niveau ---------------------------------------------------------
     def to_bytes(self) -> bytes:
-        """Équivalent de `Bytes()` : tout le contenu écrit jusqu'ici."""
         return bytes(self._buf)
 
     def grow(self, size: int) -> None:
-        """No-op : le bytearray grandit tout seul (gardé pour la parité avec Go)."""
+        pass
 
     def write_bytes_next(self, data: bytes) -> None:
         self._buf += data
 
-    # -- types primitifs ----------------------------------------------------
     def write_bool(self, b: bool) -> None:
         self._buf.append(1 if b else 0)
 
@@ -47,21 +43,17 @@ class StreamOut:
     def write_int64le(self, v: int) -> None:
         self._buf += struct.pack("<Q", v & 0xFFFFFFFFFFFFFFFF)
 
-    # -- types NEX ----------------------------------------------------------
     def write_string(self, s: str) -> None:
-        """String NEX : uint16 (longueur incluant le \\0 final) + octets + \\0."""
         data = (s + "\x00").encode("utf-8")
         self.write_uint16le(len(data))
         self._buf += data
 
     def write_buffer(self, data: bytes) -> None:
-        """Buffer NEX : uint32 (longueur) + octets."""
         self.write_uint32le(len(data))
         if len(data) > 0:
             self._buf += data
 
     def write_qbuffer(self, data: bytes) -> None:
-        """qBuffer NEX : uint16 (longueur) + octets."""
         self.write_uint16le(len(data))
         if len(data) > 0:
             self._buf += data
@@ -79,13 +71,9 @@ class StreamOut:
         self._buf += content
 
     def write_data_holder(self, dataholder: DataHolder) -> None:
-        # NOTE (correction vs Go) : la version Go passe `stream` lui-même à
-        # DataHolder.Bytes(), ce qui écrit les données puis les ré-ajoute une
-        # seconde fois. On passe ici un flux neuf, comme pour WriteStructure.
         content = dataholder.to_bytes(StreamOut(self.server))
         self._buf += content
 
-    # -- listes -------------------------------------------------------------
     def _write_list(self, items: Iterable, write_item: Callable) -> None:
         items = list(items)
         self.write_uint32le(len(items))

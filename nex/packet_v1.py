@@ -1,4 +1,3 @@
-"""Paquet PRUDPv1 (packet_v1.go)."""
 from __future__ import annotations
 
 import hashlib
@@ -14,7 +13,7 @@ from .stream_in import StreamIn
 from .stream_out import StreamOut
 from .utils import logger
 
-# OptionAllFunctions s'utilise avec OPTION_SUPPORTED_FUNCTIONS pour tout supporter
+
 OPTION_ALL_FUNCTIONS = 0xFFFFFFFF
 OPTION_SUPPORTED_FUNCTIONS = 0
 OPTION_CONNECTION_SIGNATURE = 1

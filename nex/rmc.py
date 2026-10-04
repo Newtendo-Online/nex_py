@@ -1,4 +1,3 @@
-"""Requêtes/réponses RMC (rmc.go)."""
 from __future__ import annotations
 
 from .errors import ERROR_MASK, NexError
@@ -15,7 +14,6 @@ class RMCRequest:
         self.parameters = b""
 
     def from_bytes(self, data: bytes) -> None:
-        """Remplit la requête depuis des octets (lève NexError si invalide)."""
         if len(data) < 13:
             raise NexError("[RMC] Data size less than minimum")
 
@@ -31,8 +29,6 @@ class RMCRequest:
             self.custom_id = stream.read_uint16le()
         call_id = stream.read_uint32le()
         method_id = stream.read_uint32le()
-        # NOTE (correction vs Go) : Go fait data[13:], ce qui est faux quand un
-        # custom ID (2 octets) est présent. On part de la position réelle.
         parameters = data[stream.byte_offset():]
 
         self.protocol_id = protocol_id

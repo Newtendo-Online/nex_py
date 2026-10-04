@@ -1,11 +1,11 @@
-"""Codes d'erreur NEX (port de errors.go, généré à partir de la source Go)."""
 from __future__ import annotations
+
 
 ERROR_MASK = 1 << 31
 
 
 class NexError(Exception):
-    """Levée là où la bibliothèque Go renvoie une `error`."""
+    pass
 
 
 class Core:
@@ -334,7 +334,6 @@ class Ess:
 
 
 class Errors:
-    """Équivalent de la variable globale `Errors` : Errors.Core.Unknown, etc."""
     Core = Core
     DDL = DDL
     RendezVous = RendezVous
@@ -357,8 +356,7 @@ class Errors:
 
 _CATEGORIES = (Core, DDL, RendezVous, PythonCore, Transport, DOCore, FPD, Ranking, Authentication, DataStore, ServiceItem, MatchmakeReferee, Subscriber, Ranking2, SmartDeviceVoiceChat, Screening, Custom, Ess,)
 
-# code -> "Categorie::Nom" (même ordre de parcours que InitErrorsData ; en cas de
-# doublon de code, la dernière entrée l'emporte, comme en Go)
+
 ERROR_NAMES: dict[int, str] = {}
 for _cat in _CATEGORIES:
     for _name, _code in vars(_cat).items():

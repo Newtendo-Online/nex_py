@@ -1,4 +1,3 @@
-"""Paquet PRUDP générique (packet.go, packet_interface.go)."""
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -9,16 +8,9 @@ if TYPE_CHECKING:
 
 
 class Packet:
-    """Base commune de PacketV0 et PacketV1.
-
-    Les getters/setters Go sont remplacés par de simples attributs ; seuls
-    `has_flag`, `add_flag` et `clear_flag` restent des méthodes.
-    `to_bytes()` (= `Bytes()` en Go) est implémenté par les sous-classes.
-    """
-
     def __init__(self, sender: Client, data: bytes | None):
         self.sender = sender
-        self.data = data  # octets ayant servi à créer le paquet (≠ to_bytes())
+        self.data = data
         self.version = 0
         self.source = 0
         self.destination = 0

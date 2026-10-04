@@ -1,4 +1,3 @@
-"""Paquet PRUDPv0 (packet_v0.go)."""
 from __future__ import annotations
 
 import hashlib
@@ -146,7 +145,6 @@ class PacketV0(Packet):
         sender = self.sender
         server = sender.server
 
-        # Le serveur Friends gère les signatures différemment (access key "ridfebb9")
         if server.access_key == "ridfebb9":
             if self.packet_type == DATA_PACKET:
                 payload = self.payload
@@ -165,7 +163,6 @@ class PacketV0(Packet):
 
             return b"\x00\x00\x00\x00"
 
-        # Gestion normale des signatures
         if self.packet_type in (DATA_PACKET, DISCONNECT_PACKET):
             payload = StreamOut(server)
             session_key = sender.session_key

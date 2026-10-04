@@ -1,4 +1,3 @@
-"""Types NEX (nex_types.go)."""
 from __future__ import annotations
 
 import datetime as _dt
@@ -11,14 +10,7 @@ if TYPE_CHECKING:
     from .stream_in import StreamIn
 
 
-# ---------------------------------------------------------------------------
-# Structures
-# ---------------------------------------------------------------------------
 class Structure:
-    """Base d'une Structure NEX. Les sous-classes doivent avoir un constructeur
-    sans argument (requis par DataHolder) et surcharger `extract_from_stream`
-    et `to_bytes`. `hierarchy()` retourne les instances des classes parentes."""
-
     def hierarchy(self) -> list[Structure]:
         return []
 
@@ -30,10 +22,7 @@ class Structure:
 
 
 class Data(Structure):
-    """Structure sans données."""
-
     def extract_from_stream(self, stream: StreamIn) -> None:
-        # Ne fait rien (seek relatif de 0)
         stream.seek_byte(0, True)
 
     def to_bytes(self, stream: StreamOut) -> bytes:
@@ -44,17 +33,14 @@ _data_holder_known_objects: dict[str, Structure] = {}
 
 
 def register_data_holder_type(structure: Structure) -> None:
-    """Enregistre un type de structure utilisable dans un DataHolder (clé = nom de classe)."""
     _data_holder_known_objects[type(structure).__name__] = structure
 
 
 class DataHolder:
-    """Structure pouvant contenir n'importe quelle autre structure."""
-
     def __init__(self):
         self.type_name = ""
-        self.length1 = 0  # longueur des données, length2 inclus
-        self.length2 = 0  # longueur de la structure elle-même
+        self.length1 = 0
+        self.length2 = 0
         self.object_data: Structure | None = None
 
     def extract_from_stream(self, stream: StreamIn) -> None:
@@ -72,9 +58,6 @@ class DataHolder:
     def to_bytes(self, stream: StreamOut) -> bytes:
         content = self.object_data.to_bytes(StreamOut(stream.server))
 
-        # Techniquement cet encodage est "faux" : la structure officielle est
-        #   Name (string), Length+4 (uint32), Length (uint32), Content (bytes)
-        # mais traiter les deux derniers champs comme un Buffer est pratique.
         stream.write_string(self.type_name)
         stream.write_uint32le(len(content) + 4)
         stream.write_buffer(content)
@@ -85,8 +68,8 @@ class DataHolder:
 class RVConnectionData(Structure):
     def __init__(self):
         self.station_url = ""
-        self.special_protocols = b""  # inutilisé par Nintendo
-        self.station_url_special_protocols = ""  # inutilisé par Nintendo
+        self.special_protocols = b""
+        self.station_url_special_protocols = ""
         self.time = 0
 
     def to_bytes(self, stream: StreamOut) -> bytes:
@@ -98,9 +81,6 @@ class RVConnectionData(Structure):
         return stream.to_bytes()
 
 
-# ---------------------------------------------------------------------------
-# DateTime
-# ---------------------------------------------------------------------------
 class DateTime:
     def __init__(self, value: int = 0):
         self.value = value
@@ -120,13 +100,7 @@ class DateTime:
         return f"DateTime({self.value})"
 
 
-# ---------------------------------------------------------------------------
-# StationURL
-# ---------------------------------------------------------------------------
 class StationURL:
-    """Station URL NEX, ex. ``prudps:/address=1.2.3.4;port=60000;CID=1;PID=2;sid=1;stream=10;type=2``."""
-
-    # nom du paramètre dans l'URL -> attribut Python (ordre = ordre d'encodage)
     _FIELDS = (
         ("address", "address"), ("port", "port"), ("stream", "stream"), ("sid", "sid"),
         ("CID", "cid"), ("PID", "pid"), ("type", "transport_type"), ("RVCID", "rvcid"),
@@ -164,7 +138,7 @@ class StationURL:
 
         for param in fields.split(";"):
             kv = param.split("=")
-            if len(kv) < 2:  # paramètre vide/mal formé (Go aurait paniqué)
+            if len(kv) < 2:
                 continue
 
             attr = attr_by_name.get(kv[0])
@@ -181,9 +155,6 @@ class StationURL:
         return self.scheme + ":/" + ";".join(fields)
 
 
-# ---------------------------------------------------------------------------
-# Result / ResultRange
-# ---------------------------------------------------------------------------
 class Result(Structure):
     def __init__(self, code: int = 0):
         self.code = code & 0xFFFFFFFF

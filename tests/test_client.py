@@ -1,8 +1,3 @@
-"""Client de test PRUDPv1 : joue la poignée de main complète contre run_server.py.
-
-    py test_client.py                    # vers 127.0.0.1:60000
-    py test_client.py --port 60001 --access-key ridfebb9
-"""
 import argparse
 import copy
 import logging

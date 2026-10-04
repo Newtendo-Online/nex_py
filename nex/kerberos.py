@@ -1,4 +1,3 @@
-"""Chiffrement Kerberos NEX (kerberos.go) : RC4 + HMAC-MD5."""
 from __future__ import annotations
 
 import hashlib
@@ -14,9 +13,6 @@ from .utils import logger, md5_hash
 
 
 class KerberosEncryption:
-    """Chiffre/déchiffre avec Kerberos. Le cipher RC4 est à état (comme en Go) :
-    une instance = une suite cohérente d'opérations."""
-
     def __init__(self, key: bytes):
         self.key = bytes(key)
         self.cipher = RC4(self.key)
@@ -41,8 +37,6 @@ class KerberosEncryption:
 
 
 class Ticket:
-    """Ticket d'authentification Kerberos."""
-
     def __init__(self):
         self.session_key = b""
         self.target_pid = 0
@@ -51,7 +45,6 @@ class Ticket:
     def encrypt(self, key: bytes, stream: StreamOut) -> bytes:
         encryption = KerberosEncryption(key)
 
-        # La clé de session n'est pas un buffer NEX
         stream.write_bytes_next(self.session_key)
         stream.write_uint32le(self.target_pid)
         stream.write_buffer(self.internal_data)
@@ -60,8 +53,6 @@ class Ticket:
 
 
 class TicketInternalData:
-    """Données envoyées au serveur secure."""
-
     def __init__(self):
         self.timestamp = DateTime(0)
         self.user_pid = 0
@@ -71,13 +62,12 @@ class TicketInternalData:
         stream.write_uint64le(self.timestamp.value)
         stream.write_uint32le(self.user_pid)
 
-        # La clé de session n'est pas un buffer NEX
         stream.write_bytes_next(self.session_key)
 
         data = stream.to_bytes()
 
         if stream.server.kerberos_ticket_version == 1:
-            ticket_key = os.urandom(16)  # Go utilisait math/rand (non cryptographique)
+            ticket_key = os.urandom(16)
             final_key = md5_hash(key + ticket_key)
 
             encrypted = KerberosEncryption(final_key).encrypt(data)
@@ -91,7 +81,6 @@ class TicketInternalData:
         return KerberosEncryption(key).encrypt(data)
 
     def decrypt(self, stream: StreamIn, key: bytes) -> None:
-        """Déchiffre les données et remplit l'objet."""
         server = stream.server
 
         if server.kerberos_ticket_version == 1:

@@ -1,4 +1,3 @@
-"""Flux d'entrée NEX (stream_in.go). Remplace `crunch.Buffer` par un offset sur des bytes."""
 from __future__ import annotations
 
 import struct
@@ -18,9 +17,7 @@ class StreamIn:
         self._data = bytes(data)
         self._offset = 0
 
-    # -- bas niveau ---------------------------------------------------------
     def to_bytes(self) -> bytes:
-        """Équivalent de `Bytes()` : l'intégralité des données du flux."""
         return self._data
 
     def byte_offset(self) -> int:
@@ -42,7 +39,6 @@ class StreamIn:
         self._offset += n
         return chunk
 
-    # -- types primitifs ----------------------------------------------------
     def read_bool(self) -> bool:
         return self.read_uint8() == 1
 
@@ -61,7 +57,6 @@ class StreamIn:
     def read_uint64le(self) -> int:
         return struct.unpack("<Q", self.read_bytes_next(8))[0]
 
-    # -- types NEX ----------------------------------------------------------
     def read_string(self) -> str:
         length = self.read_uint16le()
 
@@ -95,7 +90,6 @@ class StreamIn:
                 raise NexError("[ReadStructure] " + str(e)) from e
 
         if self.server.nex_version >= 30500:
-            # on ignore le nouvel en-tête de structure, les données ne nous servent pas
             self.read_uint8()     # structure header version
             self.read_uint32le()  # structure content length
 
@@ -115,8 +109,6 @@ class StreamIn:
         if kind == 1:  # sint64
             return struct.unpack("<q", self.read_bytes_next(8))[0]
         if kind == 2:  # double
-            # NOTE (correction vs Go) : Go fait float64(uint64) (conversion de la
-            # valeur) ; on décode ici le vrai IEEE-754 little-endian.
             return struct.unpack("<d", self.read_bytes_next(8))[0]
         if kind == 3:  # bool
             return self.read_uint8() == 1
@@ -130,12 +122,6 @@ class StreamIn:
         return None
 
     def read_map(self, key_function: Callable[[], Any], value_function: Callable[[], Any]) -> dict:
-        """Lit une Map NEX.
-
-        En Go, les types de clé/valeur étaient détectés via `interface{}` (TODO
-        "make this not suck"). Ici on passe simplement les méthodes de lecture :
-        ``stream.read_map(stream.read_string, stream.read_variant)``.
-        """
         length = self.read_uint32le()
         new_map = {}
 
@@ -154,7 +140,6 @@ class StreamIn:
         data_holder.extract_from_stream(self)
         return data_holder
 
-    # -- listes -------------------------------------------------------------
     def _read_list(self, read_item: Callable[[], Any]) -> list:
         length = self.read_uint32le()
         return [read_item() for _ in range(length)]

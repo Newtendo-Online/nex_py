@@ -1,9 +1,3 @@
-"""Serveur PRUDP (server.go).
-
-Les goroutines Go deviennent des threads ; `time.AfterFunc` devient `threading.Timer`.
-Les handlers d'évènements reçoivent le paquet (ou None) : le typage Go par
-`PacketV0`/`PacketV1`/`PacketInterface` n'a plus lieu d'être en Python.
-"""
 from __future__ import annotations
 
 import os
@@ -49,9 +43,7 @@ class Server:
         self.kerberos_ticket_version = 0
         self.connection_id_counter = Counter(10)
 
-    # -- boucle réseau -------------------------------------------------------
     def listen(self, address: str) -> None:
-        """Démarre le serveur NEX sur `address` (ex. ``":60000"`` ou ``"0.0.0.0:60000"``) et bloque."""
         host, _, port = address.rpartition(":")
         host = host or "0.0.0.0"
 
@@ -70,7 +62,7 @@ class Server:
 
         self.emit("Listening", None)
 
-        while not quit_event.wait(0.5):  # réveils réguliers pour laisser passer Ctrl+C
+        while not quit_event.wait(0.5):
             pass
 
         if errors:
@@ -80,7 +72,7 @@ class Server:
         try:
             while True:
                 self.handle_socket_message()
-        except OSError as e:  # erreur de socket : fatale (panic en Go)
+        except OSError as e:
             errors.append(e)
             quit_event.set()
 
@@ -89,7 +81,7 @@ class Server:
 
         try:
             self._handle_datagram(data, addr)
-        except Exception:  # un paquet défectueux ne doit pas tuer le serveur
+        except Exception:
             logger.exception("Error while handling packet")
 
     def _handle_datagram(self, data: bytes, addr: tuple) -> None:
@@ -114,14 +106,9 @@ class Server:
         if packet.has_flag(FLAG_ACK) or packet.has_flag(FLAG_MULTI_ACK):
             return
 
-        # NOTE (correction vs Go) : on met à jour l'état du client AVANT de lancer l'ACK.
-        # En Go l'ACK partait en goroutine pendant que Reset() / SetClientConnectionSignature()
-        # s'exécutaient : course de données qui pouvait effacer la signature serveur.
         if packet.packet_type == SYN_PACKET:
-            # PID toujours 0 quand une connexion toute neuve est établie
             if client.pid != 0:
-                # Déjà connecté avec cet appareil, mais avec un autre compte
-                self.emit("Disconnect", packet)  # on déconnecte l'ancienne connexion
+                self.emit("Disconnect", packet)
             client.reset()
             client.connected = True
             client.start_timeout_timer()
@@ -146,23 +133,17 @@ class Server:
 
         self.emit("Packet", packet)
 
-    # -- évènements ----------------------------------------------------------
     def on(self, event: str, handler: Callable[[Any], None]) -> None:
-        """Enregistre un handler pour un évènement (Listening, Syn, Connect, Data,
-        Disconnect, Ping, Packet, Kick). Chaque handler s'exécute dans son propre thread."""
         self.event_handlers[event].append(handler)
 
     def emit(self, event: str, packet: Any) -> None:
         for handler in list(self.event_handlers.get(event, ())):
             threading.Thread(target=handler, args=(packet,), daemon=True).start()
 
-    # -- clients -------------------------------------------------------------
     def client_connected(self, client: Client) -> bool:
         return _discriminator(client.address) in self.clients
 
     def kick(self, client: Client) -> None:
-        """Retire un client du serveur."""
-        # Les évènements serveur attendent un paquet, même si ce n'est pas un vrai évènement paquet
         if self.prudp_version == 0:
             packet = PacketV0(client, None)
         else:
@@ -185,9 +166,7 @@ class Server:
                 return client
         return None
 
-    # -- envoi ---------------------------------------------------------------
     def send_ping(self, client: Client) -> None:
-        """Envoie un paquet ping au client."""
         if self.prudp_version == 0:
             ping_packet = PacketV0(client, None)
         else:
@@ -202,7 +181,6 @@ class Server:
         self.send(ping_packet)
 
     def acknowledge_packet(self, packet, payload: bytes | None = None) -> None:
-        """Acquitte la réception du paquet donné."""
         sender = packet.sender
 
         if self.prudp_version == 0:
@@ -228,8 +206,6 @@ class Server:
 
             if packet.packet_type in (SYN_PACKET, CONNECT_PACKET):
                 ack_packet.prudp_protocol_minor_version = packet.sender.prudp_protocol_minor_version
-                # Note de l'original : ack_packet.SetSupportedFunctions(...) casse Splatoon
-                # et Minecraft Wii U (et probablement d'autres jeux plus tardifs).
                 ack_packet.maximum_substream_id = 0
 
             if packet.packet_type == SYN_PACKET:
@@ -243,20 +219,17 @@ class Server:
                 ack_packet.initial_sequence_id = 10000
 
             if packet.packet_type == DATA_PACKET:
-                # Acquittement agrégé
                 ack_packet.clear_flag(FLAG_ACK)
                 ack_packet.add_flag(FLAG_MULTI_ACK)
 
                 payload_stream = StreamOut(self)
 
-                # Nouvelle version
                 if self.prudp_protocol_minor_version >= 2:
                     ack_packet.sequence_id = 0
                     ack_packet.substream_id = 1
 
-                    # paresseux : on n'acquitte qu'un seul paquet
                     payload_stream.write_uint8(0)                    # substream ID
-                    payload_stream.write_uint8(0)                    # longueur des sequence IDs additionnels
+                    payload_stream.write_uint8(0)                    
                     payload_stream.write_uint16le(packet.sequence_id)  # sequence ID
 
                 ack_packet.payload = payload_stream.to_bytes()
@@ -264,7 +237,6 @@ class Server:
         self.send_raw(sender.address, ack_packet.to_bytes())
 
     def send(self, packet) -> None:
-        """Écrit les données vers le client, fragmentées selon `fragment_size`."""
         data = packet.payload
         fragments = len(data) // self.fragment_size
 
@@ -282,7 +254,6 @@ class Server:
                 fragment_id = (fragment_id + 1) & 0xFF
 
     def send_fragment(self, packet, fragment_id: int) -> None:
-        """Envoie un fragment de paquet au client."""
         data = packet.payload
         client = packet.sender
 
@@ -293,5 +264,4 @@ class Server:
         self.send_raw(client.address, packet.to_bytes())
 
     def send_raw(self, address: tuple, data: bytes) -> None:
-        """Écrit des données brutes vers la socket du client."""
         self.socket.sendto(data, address)

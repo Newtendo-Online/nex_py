@@ -1,8 +1,3 @@
-"""RC4 (absent de la bibliothèque standard Python).
-
-Comme `crypto/rc4.Cipher` en Go, l'objet est *à état* : le keystream continue
-d'un appel à l'autre.
-"""
 from __future__ import annotations
 
 

@@ -1,13 +1,3 @@
-"""Serveur PRUDP de test.
-
-Lance un vrai serveur UDP PRUDP, accepte les connexions (SYN / CONNECT / DATA / PING),
-logge tout ce qui arrive et répond "Core::NotImplemented" à toute requête RMC.
-
-    py run_server.py                       # écoute sur 0.0.0.0:60000
-    py run_server.py --port 60001 --access-key ridfebb9
-
-Teste-le ensuite avec :  py test_client.py
-"""
 import argparse
 import logging
 import sys
