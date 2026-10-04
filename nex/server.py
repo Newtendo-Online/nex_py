@@ -114,10 +114,9 @@ class Server:
         if packet.has_flag(FLAG_ACK) or packet.has_flag(FLAG_MULTI_ACK):
             return
 
-        if packet.has_flag(FLAG_NEEDS_ACK):
-            if packet.packet_type != CONNECT_PACKET or len(packet.payload) <= 0:
-                threading.Thread(target=self.acknowledge_packet, args=(packet, None), daemon=True).start()
-
+        # NOTE (correction vs Go) : on met à jour l'état du client AVANT de lancer l'ACK.
+        # En Go l'ACK partait en goroutine pendant que Reset() / SetClientConnectionSignature()
+        # s'exécutaient : course de données qui pouvait effacer la signature serveur.
         if packet.packet_type == SYN_PACKET:
             # PID toujours 0 quand une connexion toute neuve est établie
             if client.pid != 0:
@@ -126,10 +125,16 @@ class Server:
             client.reset()
             client.connected = True
             client.start_timeout_timer()
-            self.emit("Syn", packet)
         elif packet.packet_type == CONNECT_PACKET:
             packet.sender.client_connection_signature = packet.connection_signature
 
+        if packet.has_flag(FLAG_NEEDS_ACK):
+            if packet.packet_type != CONNECT_PACKET or len(packet.payload) <= 0:
+                threading.Thread(target=self.acknowledge_packet, args=(packet, None), daemon=True).start()
+
+        if packet.packet_type == SYN_PACKET:
+            self.emit("Syn", packet)
+        elif packet.packet_type == CONNECT_PACKET:
             self.emit("Connect", packet)
         elif packet.packet_type == DATA_PACKET:
             self.emit("Data", packet)
