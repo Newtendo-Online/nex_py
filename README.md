@@ -27,3 +27,7 @@ server.listen(":60000")
 ```
 python -m unittest discover -s tests
 ```
+
+## Credits
+- Kinnay - NintendoClients
+- PretendoNetwork for Protocols example
