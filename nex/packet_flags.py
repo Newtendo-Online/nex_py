@@ -1,0 +1,5 @@
+FLAG_ACK = 0x1        # PRUDP Ack
+FLAG_RELIABLE = 0x2   # PRUDP Reliable
+FLAG_NEEDS_ACK = 0x4  # PRUDP NeedsAck
+FLAG_HAS_SIZE = 0x8   # PRUDP HasSize
+FLAG_MULTI_ACK = 0x200  # PRUDP MultiAck
